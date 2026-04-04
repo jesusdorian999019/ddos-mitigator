@@ -1,0 +1,12 @@
+# Configuración de ejemplo para DDoS Mitigator
+# Copia a config.yaml y ajusta según tu entorno
+
+interfaz: eth0
+baseline_pps: 50
+multiplicador_alerta: 5.0
+timeout_bloqueo: 300
+whitelist:
+  - 127.0.0.1
+  - 192.168.1.0/24
+log_level: INFO
+max_ips_bloqueadas: 500
