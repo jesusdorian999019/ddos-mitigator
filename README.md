@@ -129,5 +129,7 @@ journalctl -f  # Logs sistema
 
 MIT License - Uso libre con atribución.
 
+
 ---
-**Desarrollado para producción con estándares empresariales.**
+**Desarrollado para producción con estándares empresariales por jesusdorian999019**
+
