@@ -1,39 +1,57 @@
 #!/bin/bash
 
-# Script de instalación para DDoS Mitigator
-# Debe ejecutarse como root
+# Script de instalación robusta para DDoS Mitigator
 
-set -e
+set -euo pipefail
 
-echo "=== Instalación de dependencias del sistema ==="
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# Validar root
+if [ "$EUID" -ne 0 ]; then
+  echo "ERROR: Ejecuta como root: sudo ./scripts/setup.sh"
+  exit 1
+fi
+
+# Non-interactive
+export DEBIAN_FRONTEND=noninteractive
+
+# Logging
+exec > >(tee setup.log) 2>&1
+
+echo "=== DDoS Mitigator Setup (v2.0) ==="
+
+# Validar requirements.txt
+if [ ! -f "requirements.txt" ]; then
+  echo "ERROR: Falta requirements.txt"
+  exit 1
+fi
+
+echo "=== Instalando dependencias ==="
 apt update
-apt install -y ipset nftables python3-pip python3-venv scapy
+apt install -y ipset nftables python3-pip python3-venv
 
-echo "=== Configuración de Python ==="
-cd $(dirname $0)/..
-python3 -m venv venv
+echo "=== Configurando entorno Python ==="
+if [ ! -d "venv" ]; then
+  python3 -m venv venv
+fi
+
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-echo "=== Configuración de ipset ==="
+echo "=== Configurando ipset ==="
 ipset destroy ddos_blacklist 2>/dev/null || true
 ipset create ddos_blacklist hash:ip timeout 600
 
-echo "=== Configuración de nftables ==="
-nft flush ruleset
+echo "=== Configurando nftables ==="
+nft delete table inet ddos_filter 2>/dev/null || true
 nft add table inet ddos_filter
-nft add chain inet ddos_filter input { type filter hook input priority 0 \\; policy accept \\; }
-nft add chain inet ddos_filter forward { type filter hook forward priority 0 \\; policy accept \\; }
-nft add set inet ddos_filter blacklist { type ipv4_addr \\; flags timeout \\; }
+nft add chain inet ddos_filter input { type filter hook input priority 0 \; policy accept \; }
+nft add set inet ddos_filter blacklist { type ipv4_addr \; flags timeout \; }
 nft add rule inet ddos_filter input ip saddr @blacklist drop
-nft add rule inet ddos_filter forward ip saddr @blacklist drop
 
-mkdir -p data/
-echo "=== Enriquecimiento GeoIP: Descarga manual ==="
-echo "1. Regístrate gratis en https://dev.maxmind.com/geoip/geolite2-free-geolocation-data"
-echo "2. Descarga GeoLite2-City.mmdb y GeoLite2-ASN.mmdb a ./data/"
-echo "=== Verificaciones completadas ==="
-echo "Para ejecutar: source venv/bin/activate &amp;&amp; sudo uvicorn backend.main:app --host 0.0.0.0 --port 8000"
-echo "Panel web: http://localhost:8000"
-echo "Logs forenses: data/logs.jsonl"
+echo "=== Setup completado ==="
+echo "Para ejecutar:"
+echo "source venv/bin/activate"
+echo "python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
