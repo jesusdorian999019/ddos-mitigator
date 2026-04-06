@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 from queue import Queue
+from collections import deque
 import geoip2.database
 from backend.config import config
 
@@ -43,6 +44,7 @@ class Enriquecedor:
 
     def _procesar_queue(self):
         """Thread worker para enriquecimiento async."""
+        from queue import Empty
         while True:
             try:
                 ip_data = self.queue.get(timeout=1)
@@ -51,9 +53,12 @@ class Enriquecedor:
                     self.buffer.append(enriquecido)
                     if len(self.buffer) >= self.max_buffer:
                         self._dump_buffer()
-            except:
-                time.sleep(0.1)
+            except Empty:
                 continue
+            except Exception as e:
+                import logging
+                logging.warning(f"Error en enriquecimiento: {e}")
+                time.sleep(0.1)
 
     def _enriquecer(self, ip: str, tipo: str, pps: int) -> Dict:
         """Enriquece datos IP."""
@@ -115,9 +120,13 @@ class Enriquecedor:
         try:
             with self.lock:  # Sincronizar con writer
                 with self.log_file.open('r', encoding='utf-8') as f:
-                    lines = deque(f, maxlen=n)
+                    lines = list(f)
+                    # Tomar últimas n líneas
+                    lines = lines[-n:] if len(lines) > n else lines
             return [json.loads(line.strip()) for line in lines if line.strip()]
-        except:
+        except Exception as e:
+            import logging
+            logging.warning(f"Error leyendo logs: {e}")
             return []
 
 # Instancia global lazy

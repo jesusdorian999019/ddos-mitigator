@@ -8,9 +8,12 @@ from scapy.all import sniff, IP, TCP, UDP, ICMP
 from collections import defaultdict, deque
 import threading
 import time
+import logging
 from typing import Dict, Deque
 from datetime import datetime, timedelta
 from backend.config import config
+
+logger = logging.getLogger(__name__)
 
 # Ventana de tiempo para PPS (segundos)
 VENTANA_TIEMPO = 5
@@ -59,7 +62,7 @@ class Capturador:
                     while self.contadores[key] and self.contadores[key][0] < cutoff:
                         self.contadores[key].popleft()
                     total += len(self.contadores[key])
-        return total // segundos
+        return max(1, total // segundos) if segundos > 0 else 0
 
     def top_ips(self, n: int = 10) -> list:
         """IPs con más PPS."""
@@ -79,15 +82,26 @@ class Capturador:
 
     def iniciar(self, callback_stats=None, filtro: str = None) -> None:
         """Inicia captura threaded."""
-        filtro = filtro or f"not port 22 and not port 80"  # Evitar tráfico legítimo
+        if not self.interfaz:
+            raise ValueError("Interfaz no configurada")
+        filtro = filtro or "not port 22 and not port 80"  # Evitar tráfico legítimo
         
         def packet_handler(pkt):
-            self.contar_paquete(pkt)
-            if callback_stats:
-                callback_stats(self.top_ips(5))
+            try:
+                self.contar_paquete(pkt)
+                if callback_stats:
+                    callback_stats(self.top_ips(5))
+            except Exception as e:
+                import logging
+                logging.warning(f"Error procesando paquete: {e}")
 
-        self.sniffer = sniff(iface=self.interfaz, prn=packet_handler, filter=filtro,
-                            store=0, threaded=True)
+        try:
+            self.sniffer = sniff(iface=self.interfaz, prn=packet_handler, filter=filtro,
+                                store=0, threaded=True)
+        except Exception as e:
+            import logging
+            logging.error(f"Error iniciando captura: {e}")
+            raise
 
     def pausar(self) -> None:
         self.pausado = True

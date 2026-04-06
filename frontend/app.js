@@ -1,5 +1,5 @@
 // JavaScript para panel realtime DDoS Mitigator
-const socket = io('ws://localhost:8000');
+const socket = io();
 
 let ppsChart;
 let alertasCount = 0;
@@ -33,8 +33,13 @@ function initChart() {
 
 // Actualizar métricas
 function updateMetrics(stats) {
-    document.getElementById('alertas-count').textContent = stats.alertas || 0;
-    document.getElementById('bloqueadas-count').textContent = stats.bloqueadas_count || 0;
+    if (!stats) return;
+    
+    // Actualizar contadores
+    const alertasEl = document.getElementById('alertas-count');
+    const bloqueadasEl = document.getElementById('bloqueadas-count');
+    if (alertasEl) alertasEl.textContent = stats.alertas || 0;
+    if (bloqueadasEl) bloqueadasEl.textContent = stats.bloqueadas_count || 0;
     
     // Actualizar gráfico
     if (stats.top_ips) {
@@ -124,9 +129,39 @@ socket.on('disconnect', () => {
     console.log('Desconectado');
 });
 
-// Recibir stats realtime
+// Recibir stats realtime (intentar ambos eventos)
 socket.on('message', (data) => {
+    if (typeof data === 'string') {
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            console.warn('No se pudo parsear mensaje:', e);
+            return;
+        }
+    }
     updateMetrics(data);
+});
+
+socket.on('data', (data) => {
+    if (typeof data === 'string') {
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            console.warn('No se pudo parsear data:', e);
+            return;
+        }
+    }
+    updateMetrics(data);
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Error de conexión WebSocket:', error);
+});
+
+// Reconexión automática
+socket.on('disconnect', () => {
+    console.log('Desconectado - reconectando...');
+    setTimeout(() => socket.connect(), 3000);
 });
 
 // Inicializar
@@ -134,4 +169,23 @@ initChart();
 updateMetrics({});  // Valores iniciales
 
 // Fetch inicial
-fetch('/estadisticas').then(res => res.json()).then(updateMetrics);
+fetch('/estadisticas')
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    })
+    .then(updateMetrics)
+    .catch(err => console.error('Error en fetch inicial:', err));
+
+// Actualizar logs enriquecidos cuando broadcast incluye datos
+const originalBroadcast = socket.on;
+setInterval(() => {
+    fetch('/alertas')
+        .then(res => res.json())
+        .then(data => {
+            if (data.alertas && data.alertas.length > 0) {
+                updateLogsEnriquecidos(data.alertas.slice(0, 5));
+            }
+        })
+        .catch(err => console.debug('Error fetch alertas:', err));
+}, 5000);

@@ -100,11 +100,32 @@ async def monitor_loop():
 async def startup():
     logger.info("Iniciando DDoS Mitigator - Mitigación reactiva local")
     threading.Thread(target=capturador.iniciar, daemon=True).start()
-    asyncio.create_task(monitor_loop())
+    try:
+        asyncio.create_task(monitor_loop())
+    except Exception as e:
+        logger.warning(f"Monitor loop setup error: {e}")
 
 @app.get("/")
 async def read_root():
-    return HTMLResponse(content=open('frontend/index.html').read() if os.path.exists('frontend/index.html') else "Frontend pendiente")
+    frontend_path = 'frontend/index.html'
+    if os.path.exists(frontend_path):
+        try:
+            with open(frontend_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return HTMLResponse(content=content)
+        except Exception as e:
+            logger.error(f"Error leyendo frontend: {e}")
+            return HTMLResponse(content="Error cargando frontend")
+    return HTMLResponse(content="Frontend no encontrado")
+
+# Cachear mitigador
+_mitigador_cache = None
+
+def get_mitigador_cached():
+    global _mitigador_cache
+    if _mitigador_cache is None:
+        _mitigador_cache = get_mitigador()
+    return _mitigador_cache
 
 @app.get("/estadisticas")
 async def estadisticas():
@@ -113,22 +134,36 @@ async def estadisticas():
 
 @app.get("/bloqueados")
 async def bloqueados():
-    mitigador = get_mitigador()
-    return {'ips': mitigador.listar_bloqueadas()}
+    mitigador = get_mitigador_cached()
+    try:
+        return {'ips': mitigador.listar_bloqueadas()}
+    except Exception as e:
+        logger.error(f"Error listando bloqueados: {e}")
+        return {'ips': [], 'error': str(e)}
 
 @app.get("/alertas")
 async def alertas():
-    return {'alertas': list(detector.alertas_activas.values())}
+    with detector.lock:
+        alertas_list = list(detector.alertas_activas.values())
+    return {'alertas': alertas_list}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
-            await manager.broadcast({"type": "ping", "data": data})
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await manager.broadcast({"type": "ping", "data": data})
+            except asyncio.TimeoutError:
+                logger.warning("WebSocket timeout")
+                break
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if websocket in manager.active_connections:
+            manager.disconnect(websocket)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

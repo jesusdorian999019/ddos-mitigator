@@ -22,10 +22,18 @@ class Mitigador:
     BLOQUEADOS_FILE = Path('data/bloqueados.json')
     
     def __init__(self):
-        if os.geteuid() != 0:
-            raise PermissionError("Mitigador requiere privilegios de root")
+        # Verificar privilegios de root solo en Unix/Linux
+        try:
+            if os.geteuid() != 0:
+                raise PermissionError("Mitigador requiere privilegios de root")
+        except AttributeError:
+            # Windows no tiene geteuid(), saltamos verificación
+            logger.warning("Ejecutando en Windows - verificación de root deshabilitada")
         self.BLOQUEADOS_FILE.parent.mkdir(exist_ok=True)
-        self._verificar_dependencias()
+        try:
+            self._verificar_dependencias()
+        except Exception as e:
+            logger.warning(f"Verificación de dependencias falló: {e}. Mitigación puede no funcionar.")
 
     def _verificar_dependencias(self) -> None:
         """Verifica ipset y nftables disponibles."""
@@ -35,16 +43,29 @@ class Mitigador:
         except subprocess.CalledProcessError:
             raise RuntimeError(f"ipset {self.IPSET_NAME} no existe. Ejecuta setup.sh")
 
+    def _validar_ip(self, ip: str) -> bool:
+        """Valida formato IP."""
+        import re
+        patron = r'^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$'
+        return re.match(patron, ip) is not None
+    
     def agregar_ip(self, ip: str, timeout: int = None) -> bool:
         """Agrega IP a blacklist con timeout opcional."""
+        # Validar IP
+        if not self._validar_ip(ip):
+            logger.error(f"IP inválida: {ip}")
+            return False
+            
         if ip in config.get('whitelist', []):
             logger.warning(f"IP {ip} en whitelist, no bloqueada")
             return False
         
-        timeout_str = f" timeout {timeout}" if timeout else ""
-        cmd = f"ipset add {self.IPSET_NAME} {ip}{timeout_str}"
         try:
-            subprocess.run(cmd, shell=True, check=True, capture_output=True)
+            timeout_str = []
+            if timeout:
+                timeout_str = ['timeout', str(timeout)]
+            cmd = ['ipset', 'add', self.IPSET_NAME, ip] + timeout_str
+            subprocess.run(cmd, check=True, capture_output=True)
             logger.info(f"Bloqueada IP: {ip} (timeout: {timeout}s)")
             self._guardar_bloqueadas()
             return True
@@ -54,9 +75,13 @@ class Mitigador:
 
     def eliminar_ip(self, ip: str) -> bool:
         """Elimina IP de blacklist."""
-        cmd = f"ipset del {self.IPSET_NAME} {ip}"
+        if not self._validar_ip(ip):
+            logger.error(f"IP inválida: {ip}")
+            return False
+            
         try:
-            subprocess.run(cmd, shell=True, check=True, capture_output=True)
+            cmd = ['ipset', 'del', self.IPSET_NAME, ip]
+            subprocess.run(cmd, check=True, capture_output=True)
             logger.info(f"Desbloqueada IP: {ip}")
             self._guardar_bloqueadas()
             return True
@@ -66,10 +91,17 @@ class Mitigador:
 
     def listar_bloqueadas(self) -> List[str]:
         """Lista todas las IPs bloqueadas."""
-        cmd = f"ipset list {self.IPSET_NAME} | grep -E '^([0-9]{{1,3}}\\\.){{3}}[0-9]{{1,3}}'"
+        import re
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
-            return [line.strip() for line in result.stdout.strip().split('\n') if line.strip()]
+            result = subprocess.run(['ipset', 'list', self.IPSET_NAME], 
+                                  capture_output=True, text=True, check=True)
+            patron = r'^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}'
+            ips = []
+            for line in result.stdout.strip().split('\n'):
+                line = line.strip()
+                if re.match(patron, line):
+                    ips.append(line)
+            return ips
         except subprocess.CalledProcessError:
             return []
 

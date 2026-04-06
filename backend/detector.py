@@ -66,10 +66,16 @@ class Detector:
         for ip, pps, proto in top:
             es_anomalia, razon = self.detectar_anomalia(ip, pps, proto)
             if es_anomalia:
+                # Obtener baseline de forma segura
+                baseline = 0
+                with self.lock:
+                    if ip in self.baseline_historial and len(self.baseline_historial[ip]) > 0:
+                        baseline = self.baseline_historial[ip][-1]
+                
                 alerta = {
                     'ip': ip,
                     'pps': pps,
-                    'baseline': self.baseline_historial.get(ip, deque([0]))[-1] if self.baseline_historial.get(ip) else 0,
+                    'baseline': baseline,
                     'razon': razon,
                     'timestamp': datetime.now().isoformat()
                 }
@@ -79,7 +85,8 @@ class Detector:
                     tipo = razon.split(' (')[0]
                     enriquecedor.agregar(ip, tipo, pps)
                 alertas.append(alerta)
-                self.alertas_activas[ip] = alerta
+                with self.lock:
+                    self.alertas_activas[ip] = alerta
         return alertas
 
 detector = Detector()
