@@ -199,10 +199,14 @@ async def lifespan(app: FastAPI):
 
 
 # ============== FastAPI App ==============
+start_time = time.time()  # Track uptime
+
 app = FastAPI(
     title="DDoS Mitigator",
+    description="Sistema de detección y mitigación automática de ataques DDoS",
     version="2.0",
-    description="Sistema profesional de detección y mitigación de ataques DDoS",
+    docs_url="/docs",
+    openapi_url="/openapi.json",
     lifespan=lifespan
 )
 
@@ -217,7 +221,7 @@ app.add_middleware(
 
 # Servir frontend
 try:
-    app.mount("/static", StaticFiles(directory="frontend"), name="static")
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 except Exception as e:
     logger.warning(f"No se pudo montar frontend: {e}")
 
@@ -244,7 +248,7 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": time.time(),
-        "uptime": time.time(),  # Debería guardar start time real
+        "uptime": time.time() - start_time,
         "captura_activa": capturador._running,
         "mitigacion_habilitada": get_mitigador().estadisticas()['mitigacion_habilitada'],
     }

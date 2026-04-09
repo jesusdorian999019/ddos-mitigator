@@ -15,8 +15,7 @@ function initChart() {
         console.warn('Canvas ppsChart no encontrado');
         return;
     }
-    const ctxContext = ctx.getContext('2d');
-    ppsChart = new Chart(ctxContext, {
+    ppsChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: [],
@@ -147,12 +146,12 @@ function updateLogsEnriquecidos(logs) {
         if (!dashboard) return;
         container = document.createElement('div');
         container.id = 'logs-enriquecidos';
-        container.innerHTML = '<h3>🌍 Logs Forenses Enriquecidos</h3>';
+        container.innerHTML = '<h3>Logs Forenses Enriquecidos</h3>';
         dashboard.appendChild(container);
     }
     
     if (!logs || logs.length === 0) {
-        container.innerHTML = '<h3>🌍 Logs Forenses Enriquecidos</h3><p style=\"padding: 10px;\">Sin logs</p>';
+        container.innerHTML = '<h3>Logs Forenses Enriquecidos</h3><p style="padding: 10px;">Sin logs</p>';
         return;
     }
     
@@ -164,8 +163,8 @@ function updateLogsEnriquecidos(logs) {
         const tipo = log.tipo_ataque || 'N/A';
         const pps = log.pps || 0;
         const time = log.timestamp ? log.timestamp.slice(11, 19) : 'N/A';
-        return `<div class=\"log-item\" style=\"animation: slideIn 0.3s ease-out ${idx * 0.05}s both;\">
-            <div style=\"flex: 1;\">
+        return `<div class="log-item" style="animation: slideIn 0.3s ease-out ${idx * 0.05}s both;">
+            <div style="flex: 1;">
                 <strong>${escapeHtml(ip)}</strong> (${escapeHtml(pais)}, ${escapeHtml(ciudad)})<br>
                 <small>${escapeHtml(tipo)} | ${pps} PPS | ${escapeHtml(asn)}</small>
             </div>
@@ -173,7 +172,7 @@ function updateLogsEnriquecidos(logs) {
         </div>`;
     }).join('');
     
-    container.innerHTML = '<h3>🌍 Logs Forenses Enriquecidos</h3>' + logsHtml;
+    container.innerHTML = '<h3>Logs Forenses Enriquecidos</h3>' + logsHtml;
 }
 
 // Utils
@@ -192,7 +191,7 @@ function connectWebSocket() {
         ws = new WebSocket(url);
         
         ws.onopen = () => {
-            console.log('✅ WebSocket conectado');
+            console.log('[OK] WebSocket conectado');
             document.body.classList.remove('ws-disconnected');
             document.body.classList.add('ws-connected');
             wsReconnectInterval = 3000;
@@ -213,17 +212,17 @@ function connectWebSocket() {
                 }
                 updateMetrics(data);
             } catch (e) {
-                console.warn('Error parseando WS:', e);
+                console.warn('[WARN] Error parseando WS:', e);
             }
         };
         
         ws.onerror = (error) => {
-            console.error('❌ Error WebSocket:', error);
+            console.error('[ERROR] WebSocket error:', error);
             document.body.classList.add('ws-disconnected');
         };
         
         ws.onclose = () => {
-            console.warn('⚠️ WebSocket cerrado');
+            console.warn('[WARN] WebSocket cerrado');
             document.body.classList.add('ws-disconnected');
             // Reconectar
             setTimeout(connectWebSocket, wsReconnectInterval);
@@ -259,7 +258,7 @@ setInterval(() => {
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Inicializando dashboard');
+    console.log('[INFO] Inicializando dashboard');
     initChart();
     
     // Estilos para animaciónes
@@ -276,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         body.ws-disconnected::before {
-            content: '⚠️ Sin conexión en tiempo real';
+            content: '[WARN] Sin conexión en tiempo real';
             position: fixed;
             top: 0;
             left: 0;
