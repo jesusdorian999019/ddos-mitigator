@@ -1,6 +1,6 @@
 # TODO - Mejora Enriquecimiento IPs
 
-## Progreso: 10/9 completado ✅
+## Progreso: 10/9 completado
 
 **¡Mejora Enriquecimiento IPs implementada completamente!**
 
