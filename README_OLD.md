@@ -408,4 +408,4 @@ GPL-3.0 - Código abierto para uso educativo y comercial
 
 Desarrollado como un sistema profesional, production-ready para mitigación de DDoS.
 
-**Última actualización**: 2026 | **Versión**: 7.0 | **Status**: Production-Ready
+**Última actualización**: 2026 | **Versión**: 6.0 | **Status**: Production-Ready
