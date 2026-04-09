@@ -61,8 +61,12 @@ Sistema profesional, production-ready de detección y mitigación automática de
 ## Instalación Rápida
 
 ```bash
-# Clonar/descargar repositorio
+# Clonar repositorio desde GitHub
+git clone https://github.com/jesusdorian999019/ddos-mitigator.git
 cd ddos-mitigator
+
+# Hacer ejecutable el script de setup
+chmod +x scripts/setup.sh
 
 # Ejecutar setup.sh (instala deps, crea venv, prepara ipset/nftables)
 sudo ./scripts/setup.sh

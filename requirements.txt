@@ -4,7 +4,7 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
 # Packet capture
-scapy==2.5.0
+scapy>=2.6.0
 
 # Configuration
 pyyaml==6.0.1

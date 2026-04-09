@@ -166,7 +166,7 @@ class Capturador:
             try:
                 logger.info(f"Iniciando captura en {self.interfaz} con filtro: {filtro}")
                 sniff(iface=self.interfaz, prn=packet_handler, filter=filtro,
-                      store=False, threaded=False)
+                      store=False)
             except PermissionError:
                 logger.error("ERROR: Requiere privilegios de root para sniffing")
             except Exception as e:
