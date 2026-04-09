@@ -2,7 +2,7 @@
 
 Sistema profesional, production-ready de detección y mitigación automática de ataques DoS/DDoS para servidores Linux.
 
-**Autor**: [jesusdorian999019](https://github.com/jesusdorian999019) | **Versión**: 2.0 | **Status**: Production-Ready
+**Autor**: [jesusdorian999019](https://github.com/jesusdorian999019) | **Versión**: 7.0 | **Status**: Production-Ready
 
 ---
 
