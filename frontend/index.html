@@ -3,30 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DDoS Mitigator - Panel de Control</title>
-    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://cdn.socket.io">
+    <meta name="description" content="DDoS Mitigator - Sistema de mitigación automática de ataques DDoS">
+    <title>DDoS Mitigator - Panel de Control en Tiempo Real</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="estilos.css">
+    <style>
+        :root {
+            --color-primary: #00d4ff;
+            --color-danger: #f87171;
+            --color-success: #4ade80;
+            --color-bg-dark: #0f0f23;
+            --color-bg-light: #1a1a2e;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>DDoS Mitigator</h1>
+        <header>
+            <h1>🛡️ DDoS Mitigator</h1>
+            <p class="subtitle">Sistema Inteligente de Detección y Mitigación de Ataques</p>
+            <div class="connection-status">
+                <span id="connection-indicator" class="indicator disconnected"></span>
+                <span id="connection-text">Conectando...</span>
+            </div>
+        </header>
+
         <div class="dashboard">
+            <!-- Panel de métricas clave -->
             <div class="metricas">
-                <div class="metrica">
-                    <h3>Alertas Activas</h3>
-                    <span id="alertas-count">0</span>
+                <div class="metrica alerta-box">
+                    <h3>🚨 Alertas Activas</h3>
+                    <span id="alertas-count" class="big-number">0</span>
+                    <p class="subtitle">anomalías detectadas</p>
                 </div>
-                <div class="metrica">
-                    <h3>IPs Bloqueadas</h3>
-                    <span id="bloqueadas-count">0</span>
+                <div class="metrica bloqueadas-box">
+                    <h3>🔒 IPs Bloqueadas</h3>
+                    <span id="bloqueadas-count" class="big-number">0</span>
+                    <p class="subtitle">en blacklist</p>
+                </div>
+                <div class="metrica sistema-box">
+                    <h3>⚙️ Estado Sistema</h3>
+                    <div id="sistema-status">
+                        <p>Cargando...</p>
+                    </div>
                 </div>
             </div>
-            <canvas id="ppsChart" width="400" height="200"></canvas>
-            <div id="top-ips"></div>
-            <div id="alertas-detalle"></div>
+
+            <!-- Gráfico de PPS en tiempo real -->
+            <div class="chart-container">
+                <h3>📊 Top IPs - PPS en Tiempo Real</h3>
+                <canvas id="ppsChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Top IPs -->
+            <div class="top-ips-container">
+                <h3>🌐 Top 20 IPs por Tráfico</h3>
+                <div id="top-ips">
+                    <p class="loading">Cargando datos...</p>
+                </div>
+            </div>
+
+            <!-- Alertas detalladas -->
+            <div class="alertas-container">
+                <h3>⚠️ Alertas Recientes</h3>
+                <div id="alertas-detalle">
+                    <p class="loading">Sin alertas activas</p>
+                </div>
+            </div>
+
+            <!-- Logs enriquecidos (agregados dinámicamente) -->
+            <div id="logs-container"></div>
         </div>
+
+        <footer>
+            <p>DDoS Mitigator v2.0 | Documentación: <a href="/docs" target="_blank\">Swagger API</a></p>
+            <p><small>Actualización: <span id="last-update">nunca</span> | Conexión: <span id="ws-status">desconectado</span></small></p>
+        </footer>
     </div>
+
     <script src="app.js"></script>
 </body>
 </html>

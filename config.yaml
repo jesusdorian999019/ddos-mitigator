@@ -1,12 +1,42 @@
-# Configuración de ejemplo para DDoS Mitigator
-# Copia a config.yaml y ajusta según tu entorno
+# DDoS Mitigator - Configuración de Producción
+# Edita este archivo según tu entorno
 
-interfaz: eth0
-baseline_pps: 50
-multiplicador_alerta: 5.0
-timeout_bloqueo: 300
+# ============ NETWORK ============
+interfaz: eth0                      # Interfaz a monitorear (e.g., eth0, ens0, wlan0)
+puerto_api: 8000                    # Puerto del API FastAPI
+
+# ============ DETECTION ============
+baseline_pps: 100                   # Baseline inicial en PPS (aprende en 60s)
+multiplicador_alerta: 3.0           # Multiplicador para generar alertas (>= 2.0)
+max_alertas_cache: 10000            # Máximo alertas en memoria
+
+# ============ MITIGATION ============
+timeout_bloqueo: 600                # Tiempo de bloqueo en segundos (default 10 min)
+max_ips_bloqueadas: 1000            # Máximo IPs bloqueadas simultáneamente
+max_bloqueos_ciclo: 20              # IPs a bloquear por ciclo (evita spam)
+
+# Whitelist (IPs que NUNCA serán bloqueadas)
 whitelist:
-  - 127.0.0.1
-  - 192.168.1.0/24
-log_level: INFO
-max_ips_bloqueadas: 500
+  - 127.0.0.1                       # localhost
+  - 192.168.1.0/24                  # Red local (ejemplo)
+  # - 10.0.0.0/8                    # Red privada (descomentar si aplica)
+  # - 172.16.0.0/12                 # Red privada (descomentar si aplica)
+
+# ============ ENRICHMENT ============
+enriquecimiento_activo: true        # Habilitar GeoIP/ASN/DNS reverso
+cache_enriquecimiento: 5000         # Tamaño LRU cache
+workers_enriquecimiento: 2          # Workers threads para enriquecimiento
+timeout_enriquecimiento: 5.0        # Timeout en segundos para operaciones
+
+# ============ API & SECURITY ============
+rate_limit_api: 100                 # Requests por minuto (0 = unlimited)
+modo_desarrollo: false              # DEBUG mode (FALSE en prod)
+
+# ============ LOGGING ============
+log_level: INFO                     # DEBUG, INFO, WARNING, ERROR
+log_dir: logs                       # Directorio de logs (se crea automático)
+
+# ============ DATA ============
+data_path: data                     # Ruta para datos (GeoIP DBs, etc)
+db_path: data/ddos.db               # Base de datos SQLite (futuro)
+

@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  ddos-mitigator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddos-mitigator
+    
+    # Networking
+    network_mode: host  # Necesario para capturar paquetes
+    privileged: true   # Necesario para ipset y nftables
+    
+    # Volumes
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./frontend:/app/frontend:ro
+      - ./backend:/app/backend:ro
+    
+    # Environment
+    environment:
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    
+    # Ports
+    ports:
+      - "8000:8000"
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  default:
+    driver: host

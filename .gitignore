@@ -1,0 +1,55 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data y Logs
+logs/
+*.log
+data/
+*.jsonl
+*.db
+bloqueados.json
+
+# Config (mantener ejemplo)
+config.yaml
+!config.yaml.example
+
+# Temporal
+*.tmp
+*.temp
+.pytest_cache/
+
+# GeoIP (descargar manual)
+data/GeoLite2-*.mmdb
+
+# Docker
+.dockerignore
+*.env.local
+
+# Tests
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
